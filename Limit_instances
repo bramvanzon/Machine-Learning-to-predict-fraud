@@ -1,0 +1,38 @@
+### create the final files with the last instances = 50,100,150,200 
+
+import os
+import pandas as pd
+
+def extract_last_instances(input_folders, output_folder, num_instances_list):
+    """
+    Extracts the last instances per unique value of pump_index from files in input_folders
+    and saves them to output_folder.
+    
+    Args:
+        input_folders (list): List of input folders containing the files to process.
+        output_folder (str): Path to the output folder where the extracted instances will be saved.
+        num_instances_list (list): List of numbers of last instances to extract per unique value of pump_index.
+    """
+    for num_instances in num_instances_list:
+        for input_folder in input_folders:
+            for filename in os.listdir(input_folder):
+                if filename.endswith('.csv'):
+                    file_path = os.path.join(input_folder, filename)
+                    df = pd.read_csv(file_path)
+                    
+                    # Group by pump_index and extract the last instances
+                    last_instances = df.groupby('pump_index').tail(num_instances)
+                    
+                    # Save the extracted instances to a new file
+                    output_filename = f'{num_instances}_last_instances_{filename}'
+                    output_path = os.path.join(output_folder, output_filename)
+                    last_instances.to_csv(output_path, index=False)
+
+# Example usage:
+input_folders = ['features']
+output_folder = 'Last_instances'
+num_instances_list = [100, 50, 150, 200]
+
+extract_last_instances(input_folders, output_folder, num_instances_list)
+
+
