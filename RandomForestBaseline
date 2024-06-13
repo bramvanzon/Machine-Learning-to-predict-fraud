@@ -1,0 +1,57 @@
+import os
+import pandas as pd
+from sklearn.model_selection import cross_validate
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import make_scorer, confusion_matrix
+from datetime import datetime
+
+start_time = datetime.now()
+
+# Custom scorer for F1 score and recall
+scoring = {'roc_auc': 'roc_auc',
+           'f1': 'f1',
+           'recall': 'recall'}
+
+folderRF = "B_RF"
+
+files = [f for f in os.listdir(folderRF) if os.path.isfile(os.path.join(folderRF, f)) and f.endswith('.csv')]
+
+results = {}
+
+for filename in files:
+    filepath = os.path.join(folderRF, filename)
+    df = pd.read_csv(filepath)
+    X = df.drop('value', axis=1)
+    X = X.drop('symbol', axis=1)
+    y = df['value']
+    
+    rf_classifier = RandomForestClassifier(n_estimators=5000, random_state=42)
+    # Perform cross-validation with multiple scoring metrics
+    cv_results = cross_validate(rf_classifier, X, y, cv=15, scoring=scoring, return_train_score=False)
+    
+    # Store average scores
+    avg_roc_auc = cv_results['test_roc_auc'].mean()
+    avg_f1 = cv_results['test_f1'].mean()
+    avg_recall = cv_results['test_recall'].mean()
+    
+    # Store confusion matrix
+    rf_classifier.fit(X, y)  # Fit the classifier on the entire data
+    y_pred = rf_classifier.predict(X)
+    
+    # Store results in dictionary
+    results[filename] = {'Avg ROC AUC': avg_roc_auc, 'Avg F1': avg_f1, 'Avg Recall': avg_recall}
+
+# Convert dictionary to DataFrame
+results_df = pd.DataFrame.from_dict(results, orient='index')
+
+# Save results to CSV
+results_df.to_csv('results_cross_val.csv')
+
+
+# Stop the timer
+end_time = datetime.now()
+
+# Calculate elapsed time
+elapsed_time = end_time - start_time
+
+print(f"Elapsed time: {elapsed_time.total_seconds():.2f} seconds")
